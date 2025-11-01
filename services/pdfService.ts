@@ -1,6 +1,6 @@
 
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { ProcessedVehicleData } from '../types';
 
 export const generateReport = (data: ProcessedVehicleData[]) => {
@@ -10,7 +10,7 @@ export const generateReport = (data: ProcessedVehicleData[]) => {
   // Header
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text("AI EV Fleet Compliance Report", 105, 20, { align: 'center' });
+  doc.text("AI Vehicle Compliance Report", 105, 20, { align: 'center' });
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
   doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 28, { align: 'center' });
@@ -21,7 +21,7 @@ export const generateReport = (data: ProcessedVehicleData[]) => {
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text("Unified Compliance Details", 14, 50);
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: 55,
     head: [['Plate', 'Vehicle', 'Helmet', 'Fine (₹)', 'Insurance', 'PUC', 'Tax', 'Charging']],
     body: data.map(v => [
@@ -35,7 +35,7 @@ export const generateReport = (data: ProcessedVehicleData[]) => {
       v.charging.discrepancyFlag,
     ]),
     theme: 'grid',
-    headStyles: { fillColor: [17, 34, 64] }, // #112240
+    headStyles: { fillColor: [9, 98, 76] }, // #09624C (Bangladesh Green)
   });
 
   // Charging Discrepancy Analysis Table
@@ -45,7 +45,7 @@ export const generateReport = (data: ProcessedVehicleData[]) => {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.text("Charging Discrepancy Analysis", 14, finalY + 15);
-    (doc as any).autoTable({
+    autoTable(doc, {
         startY: finalY + 20,
         head: [['Plate', 'Billed (kWh)', 'Detected (kWh)', 'Difference (kWh)', 'Flag']],
         body: discrepancyData.map(v => [
@@ -56,9 +56,9 @@ export const generateReport = (data: ProcessedVehicleData[]) => {
             v.charging.discrepancyFlag,
         ]),
         theme: 'grid',
-        headStyles: { fillColor: [17, 34, 64] }, // #112240
+        headStyles: { fillColor: [9, 98, 76] }, // #09624C (Bangladesh Green)
     });
   }
 
-  doc.save(`ev-compliance-report-${new Date().toISOString().split('T')[0]}.pdf`);
+  doc.save(`compliance-report-${new Date().toISOString().split('T')[0]}.pdf`);
 };

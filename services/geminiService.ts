@@ -27,15 +27,15 @@ export async function getComplianceSummary(vehicleData: ProcessedVehicleData): P
     };
 
     const prompt = `
-        You are an AI EV Fleet Specialist, providing compliance summaries for a smart charging network.
-        Your task is to analyze the provided vehicle data and generate a concise, human-readable compliance summary.
+        You are an AI Vehicle Compliance Specialist for a futuristic transit network.
+        Your task is to analyze the provided vehicle data and generate a concise, human-readable compliance summary, following strict NASA-style brevity.
 
         Rules:
-        - Start with the vehicle's number plate.
+        - Start with the vehicle's designation (plate number).
         - Use bullet points for clarity.
-        - Focus ONLY on issues, violations, or warnings.
-        - If there are no issues, simply state "All systems nominal. Full compliance achieved."
-        - Keep the summary brief and to the point.
+        - Report ONLY on anomalies, violations, or warnings.
+        - If there are no issues, the only acceptable response is "All systems nominal. Full compliance achieved."
+        - Keep the summary brief and technical.
 
         Here is the data for the vehicle:
         ${JSON.stringify(promptData, null, 2)}

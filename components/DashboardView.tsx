@@ -16,21 +16,21 @@ const getStatusIcon = (status: string) => {
         case 'valid':
         case 'paid':
         case 'ok':
-            return <CheckCircleIcon className="w-6 h-6 text-ev-orange" />;
+            return <CheckCircleIcon className="w-6 h-6 text-caribbean-green" />;
         case 'expired':
         case 'due':
-            return <XCircleIcon className="w-6 h-6 text-ev-pink" />;
+            return <XCircleIcon className="w-6 h-6 text-frog" />;
         case 'suspicious':
         case 'potential charger fault':
             return <WarningIcon className="w-6 h-6 text-yellow-400" />;
         default:
-            return <span className="text-ev-text-slate">-</span>;
+            return <span className="text-stone">-</span>;
     }
 };
 
 const ComplianceGauge: React.FC<{ score: number }> = ({ score }) => {
   const data = [{ name: 'score', value: score }];
-  const color = score > 80 ? '#FF7B54' : score > 50 ? '#FBBF24' : '#FF4D6D';
+  const color = score > 80 ? '#00DF81' : score > 50 ? '#20C295' : '#D9534F'; // Caribbean Green, Mountain Meadow, Red for severe
   
   return (
     <div className="relative w-full h-64">
@@ -44,8 +44,8 @@ const ComplianceGauge: React.FC<{ score: number }> = ({ score }) => {
           barSize={20}
         >
           <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
-          <RadialBar background={{fill: '#233554'}} dataKey="value" angleAxisId={0} cornerRadius={10}>
-             <Cell fill={color} className="shadow-glow-orange" filter="url(#glow)" />
+          <RadialBar background={{fill: '#084533'}} dataKey="value" angleAxisId={0} cornerRadius={10}>
+             <Cell fill={color} filter="url(#glow)" />
           </RadialBar>
         </RadialBarChart>
       </ResponsiveContainer>
@@ -53,7 +53,7 @@ const ComplianceGauge: React.FC<{ score: number }> = ({ score }) => {
         <span className="text-5xl font-bold" style={{ color }}>
           {score.toFixed(0)}
         </span>
-        <span className="text-lg text-ev-text-slate">/ 100</span>
+        <span className="text-lg text-stone">/ 100</span>
       </div>
       <svg width="0" height="0">
         <defs>
@@ -96,10 +96,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
     return (
     <div className="p-4 md:p-8 min-h-screen animate-fade-in">
         <header className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-ev-orange tracking-wider">COMPLIANCE ANALYSIS</h1>
+            <h1 className="text-3xl font-bold text-caribbean-green tracking-wider">COMPLIANCE ANALYSIS</h1>
             <button 
                 onClick={onReset} 
-                className="border border-ev-text-slate text-ev-text-slate px-4 py-2 rounded-md hover:border-ev-orange hover:text-ev-orange hover:shadow-glow-orange transition-all duration-300"
+                className="border border-stone text-stone px-4 py-2 rounded-md hover:border-caribbean-green hover:text-caribbean-green hover:shadow-glow-green transition-all duration-300"
             >
                 New Analysis
             </button>
@@ -109,11 +109,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
             {/* Left Panel */}
             <div className="lg:col-span-2 xl:col-span-3 space-y-6">
                  {/* Unified Compliance Table */}
-                 <div className="bg-ev-panel-blue/50 backdrop-blur-sm rounded-lg p-4 border border-ev-border-blue animate-slide-in-up">
-                    <h2 className="text-xl font-semibold text-ev-light-gray mb-4">Unified Compliance Table</h2>
+                 <div className="bg-basil/30 backdrop-blur-sm rounded-lg p-4 border border-bangladesh-green animate-slide-in-up">
+                    <h2 className="text-xl font-semibold text-anti-flash-white mb-4">Unified Compliance Table</h2>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="border-b-2 border-ev-border-blue text-ev-text-slate">
+                            <thead className="border-b-2 border-bangladesh-green text-stone">
                                 <tr>
                                     {['Plate', 'Vehicle', 'Helmet', 'Fine', 'Insurance', 'PUC', 'Tax', 'Charging', 'Status', 'AI Insights'].map(h => (
                                         <th key={h} className="p-3">{h}</th>
@@ -122,24 +122,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                             </thead>
                             <tbody>
                                 {data.map((v, i) => (
-                                    <tr key={i} className="border-b border-ev-border-blue hover:bg-ev-panel-blue transition-colors">
+                                    <tr key={i} className="border-b border-bangladesh-green/50 hover:bg-forest transition-colors">
                                         <td className="p-3 font-mono">{v.plate}</td>
                                         <td className="p-3">{v.vehicleType}</td>
-                                        <td className="p-3">{v.helmet === null ? '—' : (v.helmet ? <CheckCircleIcon className="w-6 h-6 text-ev-orange" /> : <XCircleIcon className="w-6 h-6 text-ev-pink" />)}</td>
+                                        <td className="p-3">{v.helmet === null ? '—' : (v.helmet ? <CheckCircleIcon className="w-6 h-6 text-caribbean-green" /> : <XCircleIcon className="w-6 h-6 text-red-500" />)}</td>
                                         <td className="p-3">{v.rto.pendingFine > 0 ? `₹${v.rto.pendingFine}` : '₹0'}</td>
                                         <td className="p-3">{getStatusIcon(v.compliance.insuranceStatus)}</td>
                                         <td className="p-3">{getStatusIcon(v.compliance.pucStatus)}</td>
                                         <td className="p-3">{getStatusIcon(v.compliance.taxStatus)}</td>
                                         <td className="p-3">{getStatusIcon(v.charging.discrepancyFlag)}</td>
-                                        <td className="p-3 text-yellow-300">{v.compliance.overallStatus.length > 0 ? v.compliance.overallStatus[0] : 'OK'}</td>
+                                        <td className="p-3 text-frog">{v.compliance.overallStatus.length > 0 ? v.compliance.overallStatus[0] : <span className="text-caribbean-green">OK</span>}</td>
                                         <td className="p-3 min-w-[200px]">
                                             {summaries[v.plate] ? (
-                                                <div className="text-sm text-ev-light-gray/90 whitespace-pre-wrap font-mono">{summaries[v.plate]}</div>
+                                                <div className="text-sm text-anti-flash-white/90 whitespace-pre-wrap font-mono">{summaries[v.plate]}</div>
                                             ) : (
                                                 <button
                                                 onClick={() => handleGenerateSummary(v)}
                                                 disabled={!!loadingSummary}
-                                                className="flex items-center gap-2 px-3 py-1 text-sm rounded-md bg-ev-orange/20 text-ev-orange hover:bg-ev-orange/40 disabled:opacity-50 disabled:cursor-wait transition-all"
+                                                className="flex items-center gap-2 px-3 py-1 text-sm rounded-md bg-caribbean-green/20 text-caribbean-green hover:bg-caribbean-green/40 disabled:opacity-50 disabled:cursor-wait transition-all"
                                                 >
                                                 {loadingSummary === v.plate ? (
                                                     <ProcessingIcon className="w-4 h-4 animate-spin" />
@@ -159,11 +159,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
 
                 {/* Charging Discrepancy Summary */}
                 {discrepancyData.length > 0 && (
-                    <div className="bg-ev-panel-blue/50 backdrop-blur-sm rounded-lg p-4 border border-ev-border-blue animate-slide-in-up" style={{ animationDelay: '200ms'}}>
-                        <h2 className="text-xl font-semibold text-ev-light-gray mb-4">Charging Discrepancy Detections</h2>
+                    <div className="bg-basil/30 backdrop-blur-sm rounded-lg p-4 border border-bangladesh-green animate-slide-in-up" style={{ animationDelay: '200ms'}}>
+                        <h2 className="text-xl font-semibold text-anti-flash-white mb-4">Charging Discrepancy Detections</h2>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="border-b-2 border-ev-border-blue text-ev-text-slate">
+                                <thead className="border-b-2 border-bangladesh-green text-stone">
                                     <tr>
                                         {['Plate', 'Billed (kWh)', 'Detected (kWh)', 'Difference', 'Flag'].map(h => (
                                             <th key={h} className="p-3">{h}</th>
@@ -172,11 +172,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                                 </thead>
                                 <tbody>
                                     {discrepancyData.map((v, i) => (
-                                        <tr key={i} className="border-b border-ev-border-blue bg-ev-pink/20 hover:bg-ev-pink/30 transition-colors">
+                                        <tr key={i} className="border-b border-bangladesh-green/50 bg-frog/20 hover:bg-frog/30 transition-colors">
                                             <td className="p-3 font-mono">{v.plate}</td>
                                             <td className="p-3">{v.charging.billed.toFixed(2)}</td>
                                             <td className="p-3">{v.charging.detected.toFixed(2)}</td>
-                                            <td className={`p-3 font-bold ${v.charging.difference > 0 ? 'text-ev-pink' : 'text-yellow-400'}`}>{v.charging.difference.toFixed(2)}</td>
+                                            <td className={`p-3 font-bold text-red-400`}>{v.charging.difference.toFixed(2)}</td>
                                             <td className="p-3 text-yellow-400 flex items-center gap-2"><WarningIcon className="w-5 h-5" />{v.charging.discrepancyFlag}</td>
                                         </tr>
                                     ))}
@@ -189,16 +189,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
 
             {/* Right Panel */}
             <div className="lg:col-span-1 xl:col-span-1 space-y-6">
-                <div className="bg-ev-panel-blue/50 backdrop-blur-sm rounded-lg p-6 border border-ev-border-blue animate-slide-in-up" style={{ animationDelay: '100ms'}}>
-                    <h2 className="text-xl font-semibold text-ev-light-gray mb-4 text-center">Overall Compliance Score</h2>
+                <div className="bg-basil/30 backdrop-blur-sm rounded-lg p-6 border border-bangladesh-green animate-slide-in-up" style={{ animationDelay: '100ms'}}>
+                    <h2 className="text-xl font-semibold text-anti-flash-white mb-4 text-center">Overall Compliance Score</h2>
                     <ComplianceGauge score={overallScore} />
                 </div>
-                <div className="bg-ev-panel-blue/50 backdrop-blur-sm rounded-lg p-6 border border-ev-border-blue animate-slide-in-up" style={{ animationDelay: '300ms'}}>
-                    <h2 className="text-xl font-semibold text-ev-light-gray mb-4">Violations Summary</h2>
+                <div className="bg-basil/30 backdrop-blur-sm rounded-lg p-6 border border-bangladesh-green animate-slide-in-up" style={{ animationDelay: '300ms'}}>
+                    <h2 className="text-xl font-semibold text-anti-flash-white mb-4">Violations Summary</h2>
                     {violations.length > 0 ? (
                         <ul className="space-y-2 max-h-60 overflow-y-auto">
                             {violations.map((violation, i) => (
-                                <li key={i} className="flex items-start gap-2 text-yellow-300">
+                                <li key={i} className="flex items-start gap-2 text-frog">
                                     <WarningIcon className="w-5 h-5 mt-1 flex-shrink-0" />
                                     <span>{violation}</span>
                                 </li>
@@ -206,12 +206,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                         </ul>
                     ) : (
                         <div className="text-center py-4">
-                            <CheckCircleIcon className="w-12 h-12 text-ev-orange mx-auto mb-2" />
-                            <p className="text-ev-light-gray">No violations detected.</p>
+                            <CheckCircleIcon className="w-12 h-12 text-caribbean-green mx-auto mb-2" />
+                            <p className="text-anti-flash-white">No violations detected.</p>
                         </div>
                     )}
                 </div>
-                 <button onClick={onGenerateReport} className="w-full text-lg font-bold bg-ev-orange text-ev-dark-blue px-8 py-3 rounded-md hover:bg-ev-light-pink hover:shadow-glow-orange transition-all duration-300">
+                 <button onClick={onGenerateReport} className="w-full text-lg font-bold bg-caribbean-green text-rich-black px-8 py-3 rounded-md hover:bg-mountain-meadow hover:shadow-glow-green-lg transition-all duration-300">
                     Generate Full Report
                 </button>
             </div>

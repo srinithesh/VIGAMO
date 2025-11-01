@@ -33,7 +33,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onAnalyze, isLoading }) 
   
   const handleUseMockData = () => {
     const mockCsv = getMockTransactionCsv();
-    const mockVideoFile = new File(["mock video content"], "charging_bay_feed.mp4", { type: "video/mp4" });
+    const mockVideoFile = new File(["mock video content"], "cctv_feed.mp4", { type: "video/mp4" });
     setTransactionLog(mockCsv);
     setVideoFile(mockVideoFile);
     setError('');
@@ -41,7 +41,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onAnalyze, isLoading }) 
 
   const handleAnalyzeClick = () => {
     if (!videoFile || !transactionLog) {
-      setError('Please upload both charging bay footage and a charging log.');
+      setError('Please provide both a CCTV feed and a transaction log.');
       return;
     }
     setError('');
@@ -51,40 +51,40 @@ export const UploadView: React.FC<UploadViewProps> = ({ onAnalyze, isLoading }) 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 animate-fade-in">
       <div className="w-full max-w-4xl text-center">
-        <h1 className="text-4xl md:text-6xl font-bold text-ev-orange mb-4 tracking-wider inline-block pb-2 border-b-2 border-ev-orange/50 shadow-glow-orange">AI EV FLEET COMPLIANCE HUB</h1>
-        <p className="text-lg text-ev-light-gray mb-10">Smart Charging Verification, RTO Compliance & Fleet Analysis</p>
+        <h1 className="text-4xl md:text-6xl font-bold text-caribbean-green mb-4 tracking-wider inline-block pb-2 border-b-2 border-caribbean-green/30 shadow-glow-green">AI VEHICLE COMPLIANCE DASHBOARD</h1>
+        <p className="text-lg text-anti-flash-white/80 mb-10">Futuristic Analysis of CCTV Feeds & RTO Data</p>
 
         <div className="grid md:grid-cols-2 gap-8 mb-8">
           {/* Video Upload */}
           <div 
             onClick={() => videoInputRef.current?.click()} 
-            className="bg-ev-panel-blue/50 border-2 border-dashed border-ev-border-blue rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-ev-orange hover:bg-ev-panel-blue transition-all duration-300 transform hover:-translate-y-1 hover:animate-border-glow-pulse"
+            className="bg-pine/50 border-2 border-dashed border-bangladesh-green rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-caribbean-green hover:bg-basil transition-all duration-300 transform hover:-translate-y-1 hover:animate-border-glow-pulse"
           >
-            <CameraIcon className="w-16 h-16 text-ev-orange mb-4" />
-            <h2 className="text-xl font-semibold mb-2 text-ev-light-gray">Upload Charging Bay Footage</h2>
-            <p className="text-ev-text-slate">{videoFile ? videoFile.name : 'Click to select .mp4 file'}</p>
+            <CameraIcon className="w-16 h-16 text-caribbean-green mb-4" />
+            <h2 className="text-xl font-semibold mb-2 text-anti-flash-white">Upload CCTV Feed</h2>
+            <p className="text-stone">{videoFile ? videoFile.name : 'Click to select .mp4 file'}</p>
             <input type="file" ref={videoInputRef} onChange={handleVideoChange} accept="video/mp4" className="hidden" />
           </div>
 
           {/* Transaction Log Upload */}
           <div 
             onClick={() => transactionInputRef.current?.click()}
-            className="bg-ev-panel-blue/50 border-2 border-dashed border-ev-border-blue rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-ev-orange hover:bg-ev-panel-blue transition-all duration-300 transform hover:-translate-y-1 hover:animate-border-glow-pulse"
+            className="bg-pine/50 border-2 border-dashed border-bangladesh-green rounded-lg p-8 flex flex-col items-center justify-center cursor-pointer hover:border-caribbean-green hover:bg-basil transition-all duration-300 transform hover:-translate-y-1 hover:animate-border-glow-pulse"
           >
-            <BoltIcon className="w-16 h-16 text-ev-orange mb-4" />
-            <h2 className="text-xl font-semibold mb-2 text-ev-light-gray">Upload Charging Log</h2>
-            <p className="text-ev-text-slate">{transactionLog ? 'Log file loaded' : 'Click to select .csv or .json'}</p>
+            <BoltIcon className="w-16 h-16 text-caribbean-green mb-4" />
+            <h2 className="text-xl font-semibold mb-2 text-anti-flash-white">Upload Transaction Log</h2>
+            <p className="text-stone">{transactionLog ? 'Log file loaded' : 'Click to select .csv or .json'}</p>
             <input type="file" ref={transactionInputRef} onChange={handleTransactionChange} accept=".csv,.json" className="hidden" />
           </div>
         </div>
 
-        {error && <p className="text-ev-pink mb-4">{error}</p>}
+        {error && <p className="text-frog mb-4 font-semibold">{error}</p>}
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={handleAnalyzeClick}
               disabled={isLoading || !videoFile || !transactionLog}
-              className="w-full sm:w-auto text-lg font-bold bg-ev-orange text-ev-dark-blue px-12 py-4 rounded-md hover:bg-ev-light-pink hover:shadow-glow-orange-lg transition-all duration-300 disabled:bg-ev-text-slate disabled:cursor-not-allowed flex items-center justify-center gap-3"
+              className="w-full sm:w-auto text-lg font-bold bg-caribbean-green text-rich-black px-12 py-4 rounded-md hover:bg-mountain-meadow hover:shadow-glow-green-lg transition-all duration-300 disabled:bg-stone disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
               <UploadIcon className="w-6 h-6" />
               {isLoading ? 'ANALYZING...' : 'START ANALYSIS'}
@@ -92,7 +92,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onAnalyze, isLoading }) 
             <button
                 onClick={handleUseMockData}
                 disabled={isLoading}
-                className="w-full sm:w-auto text-lg font-bold bg-transparent border-2 border-ev-pink text-ev-pink px-12 py-4 rounded-md hover:bg-ev-pink hover:text-ev-dark-blue transition-all duration-300 disabled:opacity-50"
+                className="w-full sm:w-auto text-lg font-bold bg-transparent border-2 border-frog text-frog px-12 py-4 rounded-md hover:bg-frog hover:text-rich-black transition-all duration-300 disabled:opacity-50"
             >
                 Use Mock Data
             </button>

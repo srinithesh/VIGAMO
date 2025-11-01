@@ -77,9 +77,9 @@ const processData = (transactions: Transaction[], aiDetections: AiDetection[], r
 };
 
 const LoadingOverlay: React.FC = () => (
-    <div className="fixed inset-0 bg-ev-dark-blue/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
-        <ProcessingIcon className="w-24 h-24 text-ev-orange animate-spin" />
-        <p className="text-2xl text-ev-light-gray mt-4 tracking-widest animate-pulse-slow">ANALYZING DATA...</p>
+    <div className="fixed inset-0 bg-rich-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
+        <ProcessingIcon className="w-24 h-24 text-caribbean-green animate-spin" />
+        <p className="text-2xl text-anti-flash-white mt-4 tracking-widest animate-pulse-slow">ANALYZING DATA...</p>
     </div>
 );
 
