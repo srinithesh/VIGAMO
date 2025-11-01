@@ -1,0 +1,5 @@
+{
+  "name": "AI Vehicle & Fuel Fraud Compliance Dashboard",
+  "description": "An AI-powered dashboard to ensure fuel station compliance and vehicle legality by analyzing CCTV footage and transaction logs. It detects vehicle type, number plates, helmet usage, and fuel fraud, then cross-references with RTO data to generate a comprehensive compliance score and report.",
+  "requestFramePermissions": []
+}
