@@ -260,10 +260,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
         };
 
         return (
-            <div className="bg-pine/50 p-6 animate-fade-in">
-                <div className="flex flex-col lg:flex-row gap-6">
-                    {/* Left Column: RTO & Compliance */}
-                    <div className="flex-1">
+            <div className="p-4 bg-pine/50 space-y-4 animate-fade-in">
+                <div className="flex flex-col lg:flex-row gap-4">
+                    {/* Card 1: RTO & Compliance */}
+                    <div className="flex-1 bg-basil/20 p-4 rounded-lg border border-bangladesh-green/50">
                         <h4 className="font-bold text-caribbean-green mb-3 border-b border-bangladesh-green/30 pb-2">RTO & Compliance</h4>
                         <div className="space-y-2 text-sm">
                             <p><span className="font-semibold text-stone w-28 inline-block">Owner:</span> {vehicle.rto.owner}</p>
@@ -275,11 +275,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                         </div>
                     </div>
 
-                    {/* Right Column: Charging Analysis */}
-                    <div className="flex-1">
+                    {/* Card 2: Charging Analysis */}
+                    <div className="flex-1 bg-basil/20 p-4 rounded-lg border border-bangladesh-green/50">
                         <h4 className="font-bold text-caribbean-green mb-3 border-b border-bangladesh-green/30 pb-2">Charging Analysis</h4>
                         <div className="space-y-2 text-sm">
-                            <p><span className="font-semibold text-stone w-32 inline-block">Status:</span> {vehicle.charging.discrepancyFlag}</p>
+                           <p><span className="font-semibold text-stone w-32 inline-block">Status:</span> {vehicle.charging.discrepancyFlag}</p>
                             <p><span className="font-semibold text-stone w-32 inline-block">Billed Power:</span> {vehicle.charging.billed.toFixed(2)} kWh</p>
                             <p><span className="font-semibold text-stone w-32 inline-block">Detected Power:</span> {vehicle.charging.detected.toFixed(2)} kWh</p>
                             <p><span className="font-semibold text-stone w-32 inline-block">Discrepancy:</span> <span className={Math.abs(vehicle.charging.difference) > 0.1 ? 'text-red-400 font-bold' : ''}>{vehicle.charging.difference.toFixed(2)} kWh</span></p>
@@ -287,8 +287,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                     </div>
                 </div>
                 
-                {/* Bottom Row: AI Insights */}
-                <div className="mt-4 pt-4 border-t border-bangladesh-green/30">
+                {/* Card 3: AI Insights */}
+                <div className="bg-basil/20 p-4 rounded-lg border border-bangladesh-green/50">
                     <h4 className="font-bold text-caribbean-green mb-3">AI Insights</h4>
                     <div>
                         {summaries[vehicle.plate] ? (
@@ -640,7 +640,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                                         className="bg-transparent border-stone rounded focus:ring-caribbean-green text-caribbean-green cursor-pointer" 
                                     />
                                     Charging Discrepancy Analysis
-                                </label>
+                                 </label>
                              </div>
                         </div>
                     )}
