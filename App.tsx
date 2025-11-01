@@ -110,9 +110,9 @@ function App() {
         }, 2000);
     }, []);
 
-    const handleGenerateReport = useCallback((dataToReport: ProcessedVehicleData[], sections: ReportSections) => {
+    const handleGenerateReport = useCallback((dataToReport: ProcessedVehicleData[], sections: ReportSections, summaries: Record<string, string>) => {
         if (dataToReport && dataToReport.length > 0) {
-            generateReport(dataToReport, sections);
+            generateReport(dataToReport, sections, summaries);
         }
     }, []);
 

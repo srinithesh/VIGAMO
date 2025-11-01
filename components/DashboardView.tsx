@@ -8,7 +8,7 @@ import { getComplianceSummary, getOverallSuggestions } from '../services/geminiS
 
 interface DashboardViewProps {
   data: ProcessedVehicleData[];
-  onGenerateReport: (data: ProcessedVehicleData[], sections: ReportSections) => void;
+  onGenerateReport: (data: ProcessedVehicleData[], sections: ReportSections, summaries: Record<string, string>) => void;
   onReset: () => void;
 }
 
@@ -89,6 +89,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
     const [reportOptions, setReportOptions] = useState<ReportSections>({
         includeComplianceDetails: true,
         includeChargingDiscrepancies: true,
+        includeDetailedInsights: false,
     });
     const [showReportOptions, setShowReportOptions] = useState(false);
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -225,7 +226,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
             : filteredData;
         
         if (dataToReport.length > 0) {
-            onGenerateReport(dataToReport, reportOptions);
+            onGenerateReport(dataToReport, reportOptions, summaries);
         }
     };
 
@@ -243,7 +244,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
         : 'Generate Filtered Report';
     
     const isReportButtonDisabled = (selectedRows.size === 0 && filteredData.length === 0) || 
-                                     (!reportOptions.includeComplianceDetails && !reportOptions.includeChargingDiscrepancies);
+                                     (!reportOptions.includeComplianceDetails && !reportOptions.includeChargingDiscrepancies && !reportOptions.includeDetailedInsights);
 
 
     const DetailRow: React.FC<{ vehicle: ProcessedVehicleData }> = ({ vehicle }) => {
@@ -640,6 +641,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                                         className="bg-transparent border-stone rounded focus:ring-caribbean-green text-caribbean-green cursor-pointer" 
                                     />
                                     Charging Discrepancy Analysis
+                                 </label>
+                                 <label className="flex items-center gap-3 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        name="includeDetailedInsights"
+                                        checked={reportOptions.includeDetailedInsights} 
+                                        onChange={handleReportOptionChange}
+                                        className="bg-transparent border-stone rounded focus:ring-caribbean-green text-caribbean-green cursor-pointer" 
+                                    />
+                                    Detailed Vehicle Insights (AI & RTO)
                                  </label>
                              </div>
                         </div>

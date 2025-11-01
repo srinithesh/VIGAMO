@@ -53,4 +53,5 @@ export interface ProcessedVehicleData {
 export interface ReportSections {
   includeComplianceDetails: boolean;
   includeChargingDiscrepancies: boolean;
+  includeDetailedInsights: boolean;
 }
