@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis, Cell } from 'recharts';
-import { ProcessedVehicleData } from '../types';
-import { CheckCircleIcon, WarningIcon, XCircleIcon, SparklesIcon, ProcessingIcon } from './Icons';
-import { getComplianceSummary } from '../services/geminiService';
+import { ProcessedVehicleData, ReportSections } from '../types';
+import { CheckCircleIcon, WarningIcon, XCircleIcon, SparklesIcon, ProcessingIcon, ChevronDownIcon, CogIcon } from './Icons';
+import { getComplianceSummary, getOverallSuggestions } from '../services/geminiService';
 
 interface DashboardViewProps {
   data: ProcessedVehicleData[];
-  onGenerateReport: () => void;
+  onGenerateReport: (data: ProcessedVehicleData[], sections: ReportSections) => void;
   onReset: () => void;
 }
 
@@ -74,10 +75,50 @@ const ComplianceGauge: React.FC<{ score: number }> = ({ score }) => {
 export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateReport, onReset }) => {
     const [summaries, setSummaries] = useState<Record<string, string>>({});
     const [loadingSummary, setLoadingSummary] = useState<string | null>(null);
+    const [expandedRow, setExpandedRow] = useState<string | null>(null);
+    const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+    const [filters, setFilters] = useState({
+        compliance: 'all',
+        vehicleType: 'all',
+        charging: 'all'
+    });
+    const [aiSuggestions, setAiSuggestions] = useState<string | null>(null);
+    const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+    const [suggestionsError, setSuggestionsError] = useState<string | null>(null);
+    const [reportOptions, setReportOptions] = useState<ReportSections>({
+        includeComplianceDetails: true,
+        includeChargingDiscrepancies: true,
+    });
+    const [showReportOptions, setShowReportOptions] = useState(false);
 
     const overallScore = data.reduce((acc, v) => acc + v.compliance.score, 0) / (data.length || 1);
     const discrepancyData = data.filter(v => v.charging.discrepancyFlag !== 'OK');
     const violations = data.flatMap(v => v.compliance.overallStatus);
+
+    const vehicleTypes = useMemo(() => ['all', ...Array.from(new Set(data.map(v => v.vehicleType)))], [data]);
+
+    const filteredData = useMemo(() => {
+        return data.filter(v => {
+            if (filters.compliance === 'violations' && v.compliance.overallStatus.length === 0) return false;
+            if (filters.compliance === 'compliant' && v.compliance.overallStatus.length > 0) return false;
+            if (filters.vehicleType !== 'all' && v.vehicleType !== filters.vehicleType) return false;
+            if (filters.charging !== 'all' && v.charging.discrepancyFlag !== filters.charging) return false;
+            return true;
+        });
+    }, [data, filters]);
+
+    const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+    };
+
+    const resetFilters = () => {
+        setFilters({
+            compliance: 'all',
+            vehicleType: 'all',
+            charging: 'all'
+        });
+    };
 
     const handleGenerateSummary = async (vehicleData: ProcessedVehicleData) => {
         if (loadingSummary === vehicleData.plate || summaries[vehicleData.plate]) return;
@@ -92,6 +133,111 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
             setLoadingSummary(null);
         }
     };
+
+     const handleGenerateSuggestions = async () => {
+        setIsGeneratingSuggestions(true);
+        setSuggestionsError(null);
+        setAiSuggestions(null);
+        try {
+            const suggestions = await getOverallSuggestions(data);
+            setAiSuggestions(suggestions);
+        } catch (error) {
+            console.error("Failed to get AI suggestions:", error);
+            setSuggestionsError("Failed to generate AI suggestions. Please try again.");
+        } finally {
+            setIsGeneratingSuggestions(false);
+        }
+    };
+
+    const allVisibleSelected = useMemo(() => {
+        return filteredData.length > 0 && filteredData.every(v => selectedRows.has(v.plate));
+    }, [filteredData, selectedRows]);
+
+    const handleSelectAll = () => {
+        const newSelection = new Set(selectedRows);
+        if (allVisibleSelected) {
+            filteredData.forEach(v => newSelection.delete(v.plate));
+        } else {
+            filteredData.forEach(v => newSelection.add(v.plate));
+        }
+        setSelectedRows(newSelection);
+    };
+
+    const handleRowSelect = (plate: string) => {
+        const newSelection = new Set(selectedRows);
+        if (newSelection.has(plate)) {
+            newSelection.delete(plate);
+        } else {
+            newSelection.add(plate);
+        }
+        setSelectedRows(newSelection);
+    };
+
+    const handleReportOptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, checked } = e.target;
+        setReportOptions(prev => ({ ...prev, [name]: checked }));
+    };
+
+    const handleReportGeneration = () => {
+        const dataToReport = selectedRows.size > 0
+            ? data.filter(v => selectedRows.has(v.plate))
+            : filteredData;
+        
+        if (dataToReport.length > 0) {
+            onGenerateReport(dataToReport, reportOptions);
+        }
+    };
+
+    const reportButtonText = selectedRows.size > 0
+        ? `Generate Report for ${selectedRows.size} Vehicle(s)`
+        : 'Generate Filtered Report';
+    
+    const isReportButtonDisabled = (selectedRows.size === 0 && filteredData.length === 0) || 
+                                     (!reportOptions.includeComplianceDetails && !reportOptions.includeChargingDiscrepancies);
+
+
+    const DetailRow: React.FC<{ vehicle: ProcessedVehicleData }> = ({ vehicle }) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-pine/50 animate-fade-in">
+            {/* RTO & Compliance Details */}
+            <div>
+                <h4 className="font-bold text-caribbean-green mb-3">RTO & Compliance Details</h4>
+                <div className="space-y-2 text-sm">
+                    <p><span className="font-semibold text-stone w-32 inline-block">Owner:</span> {vehicle.rto.owner}</p>
+                    <p><span className="font-semibold text-stone w-32 inline-block">Registration:</span> {vehicle.compliance.registrationStatus} (til {vehicle.rto.registrationValidTill})</p>
+                    <p><span className="font-semibold text-stone w-32 inline-block">PUC:</span> {vehicle.compliance.pucStatus} (til {vehicle.rto.pollutionValidTill})</p>
+                    <p><span className="font-semibold text-stone w-32 inline-block">Insurance:</span> {vehicle.compliance.insuranceStatus}</p>
+                    <p><span className="font-semibold text-stone w-32 inline-block">Road Tax:</span> {vehicle.compliance.taxStatus}</p>
+                    <p><span className="font-semibold text-stone w-32 inline-block">Pending Fine:</span> {vehicle.rto.pendingFine > 0 ? `₹${vehicle.rto.pendingFine} (${vehicle.rto.fineReason})` : 'None'}</p>
+                </div>
+            </div>
+            {/* Charging & AI Insights */}
+            <div>
+                <h4 className="font-bold text-caribbean-green mb-3">Charging & AI Insights</h4>
+                <div className="space-y-2 text-sm mb-4">
+                    <p><span className="font-semibold text-stone w-32 inline-block">Status:</span> {vehicle.charging.discrepancyFlag}</p>
+                    <p><span className="font-semibold text-stone w-32 inline-block">Billed Power:</span> {vehicle.charging.billed.toFixed(2)} kWh</p>
+                    <p><span className="font-semibold text-stone w-32 inline-block">Detected Power:</span> {vehicle.charging.detected.toFixed(2)} kWh</p>
+                    <p><span className="font-semibold text-stone w-32 inline-block">Difference:</span> <span className={vehicle.charging.difference === 0 ? '' : 'text-red-400 font-bold'}>{vehicle.charging.difference.toFixed(2)} kWh</span></p>
+                </div>
+                 {summaries[vehicle.plate] ? (
+                    <div className="text-sm text-anti-flash-white/90 whitespace-pre-wrap font-mono bg-rich-black/30 p-3 rounded-md">{summaries[vehicle.plate]}</div>
+                ) : (
+                    <button
+                    onClick={() => handleGenerateSummary(vehicle)}
+                    disabled={!!loadingSummary}
+                    className="flex items-center gap-2 px-3 py-1 text-sm rounded-md bg-caribbean-green/20 text-caribbean-green hover:bg-caribbean-green/40 disabled:opacity-50 disabled:cursor-wait transition-all"
+                    >
+                    {loadingSummary === vehicle.plate ? (
+                        <ProcessingIcon className="w-4 h-4 animate-spin" />
+                    ) : (
+                        <SparklesIcon className="w-4 h-4" />
+                    )}
+                    {loadingSummary === vehicle.plate ? 'Generating...' : 'Generate AI Summary'}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
 
     return (
     <div className="p-4 md:p-8 min-h-screen animate-fade-in">
@@ -111,47 +257,129 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                  {/* Unified Compliance Table */}
                  <div className="bg-basil/30 backdrop-blur-sm rounded-lg p-4 border border-bangladesh-green animate-slide-in-up">
                     <h2 className="text-xl font-semibold text-anti-flash-white mb-4">Unified Compliance Table</h2>
+
+                    {/* FILTERS */}
+                    <div className="flex flex-col sm:flex-row flex-wrap items-center gap-4 mb-4 pb-4 border-b border-bangladesh-green/50">
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="compliance-filter" className="text-stone font-semibold text-sm">Status:</label>
+                            <select
+                                id="compliance-filter"
+                                name="compliance"
+                                value={filters.compliance}
+                                onChange={handleFilterChange}
+                                className="bg-basil/50 border border-bangladesh-green rounded-md px-3 py-1.5 text-anti-flash-white focus:ring-1 focus:ring-caribbean-green focus:outline-none transition-all"
+                            >
+                                <option value="all">All</option>
+                                <option value="violations">With Violations</option>
+                                <option value="compliant">Compliant</option>
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="vehicle-type-filter" className="text-stone font-semibold text-sm">Vehicle:</label>
+                            <select
+                                id="vehicle-type-filter"
+                                name="vehicleType"
+                                value={filters.vehicleType}
+                                onChange={handleFilterChange}
+                                className="bg-basil/50 border border-bangladesh-green rounded-md px-3 py-1.5 text-anti-flash-white focus:ring-1 focus:ring-caribbean-green focus:outline-none transition-all"
+                            >
+                                {vehicleTypes.map(type => (
+                                    <option key={type} value={type}>{type === 'all' ? 'All Types' : type}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label htmlFor="charging-filter" className="text-stone font-semibold text-sm">Charging:</label>
+                            <select
+                                id="charging-filter"
+                                name="charging"
+                                value={filters.charging}
+                                onChange={handleFilterChange}
+                                className="bg-basil/50 border border-bangladesh-green rounded-md px-3 py-1.5 text-anti-flash-white focus:ring-1 focus:ring-caribbean-green focus:outline-none transition-all"
+                            >
+                                <option value="all">All</option>
+                                <option value="OK">OK</option>
+                                <option value="Suspicious">Suspicious</option>
+                                <option value="Potential Charger Fault">Charger Fault</option>
+                            </select>
+                        </div>
+                        <button
+                            onClick={resetFilters}
+                            className="ml-auto text-sm text-stone hover:text-caribbean-green transition-colors font-semibold"
+                        >
+                            Reset Filters
+                        </button>
+                    </div>
+
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="border-b-2 border-bangladesh-green text-stone">
                                 <tr>
-                                    {['Plate', 'Vehicle', 'Helmet', 'Fine', 'Insurance', 'PUC', 'Tax', 'Charging', 'Status', 'AI Insights'].map(h => (
+                                    <th className="p-3 w-12 text-center">
+                                         <input
+                                            type="checkbox"
+                                            className="bg-transparent border-stone rounded focus:ring-caribbean-green text-caribbean-green cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                                            checked={allVisibleSelected}
+                                            onChange={handleSelectAll}
+                                            disabled={filteredData.length === 0}
+                                            aria-label="Select all visible vehicles"
+                                        />
+                                    </th>
+                                    <th className="p-3 w-8"></th>
+                                    {['Plate', 'Vehicle', 'Helmet', 'Fine', 'Insurance', 'PUC', 'Tax', 'Charging', 'Status'].map(h => (
                                         <th key={h} className="p-3">{h}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
-                                {data.map((v, i) => (
-                                    <tr key={i} className="border-b border-bangladesh-green/50 hover:bg-forest transition-colors">
-                                        <td className="p-3 font-mono">{v.plate}</td>
-                                        <td className="p-3">{v.vehicleType}</td>
-                                        <td className="p-3">{v.helmet === null ? '—' : (v.helmet ? <CheckCircleIcon className="w-6 h-6 text-caribbean-green" /> : <XCircleIcon className="w-6 h-6 text-red-500" />)}</td>
-                                        <td className="p-3">{v.rto.pendingFine > 0 ? `₹${v.rto.pendingFine}` : '₹0'}</td>
-                                        <td className="p-3">{getStatusIcon(v.compliance.insuranceStatus)}</td>
-                                        <td className="p-3">{getStatusIcon(v.compliance.pucStatus)}</td>
-                                        <td className="p-3">{getStatusIcon(v.compliance.taxStatus)}</td>
-                                        <td className="p-3">{getStatusIcon(v.charging.discrepancyFlag)}</td>
-                                        <td className="p-3 text-frog">{v.compliance.overallStatus.length > 0 ? v.compliance.overallStatus[0] : <span className="text-caribbean-green">OK</span>}</td>
-                                        <td className="p-3 min-w-[200px]">
-                                            {summaries[v.plate] ? (
-                                                <div className="text-sm text-anti-flash-white/90 whitespace-pre-wrap font-mono">{summaries[v.plate]}</div>
-                                            ) : (
-                                                <button
-                                                onClick={() => handleGenerateSummary(v)}
-                                                disabled={!!loadingSummary}
-                                                className="flex items-center gap-2 px-3 py-1 text-sm rounded-md bg-caribbean-green/20 text-caribbean-green hover:bg-caribbean-green/40 disabled:opacity-50 disabled:cursor-wait transition-all"
+                                {filteredData.length > 0 ? (
+                                    filteredData.map((v) => (
+                                        <React.Fragment key={v.plate}>
+                                            <tr 
+                                                className="border-b border-bangladesh-green/50 hover:bg-forest transition-colors group"
+                                            >
+                                                <td className="p-3 text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="bg-transparent border-stone rounded focus:ring-caribbean-green text-caribbean-green cursor-pointer"
+                                                        checked={selectedRows.has(v.plate)}
+                                                        onChange={() => handleRowSelect(v.plate)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        aria-label={`Select vehicle ${v.plate}`}
+                                                    />
+                                                </td>
+                                                <td 
+                                                    className="p-3 text-center cursor-pointer"
+                                                    onClick={() => setExpandedRow(expandedRow === v.plate ? null : v.plate)}
                                                 >
-                                                {loadingSummary === v.plate ? (
-                                                    <ProcessingIcon className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <SparklesIcon className="w-4 h-4" />
-                                                )}
-                                                {loadingSummary === v.plate ? 'Generating...' : 'Summarize'}
-                                                </button>
+                                                    <ChevronDownIcon className={`w-5 h-5 text-stone transition-transform transform group-hover:text-anti-flash-white ${expandedRow === v.plate ? 'rotate-180' : ''}`} />
+                                                </td>
+                                                <td className="p-3 font-mono">{v.plate}</td>
+                                                <td className="p-3">{v.vehicleType}</td>
+                                                <td className="p-3">{v.helmet === null ? '—' : (v.helmet ? <CheckCircleIcon className="w-6 h-6 text-caribbean-green" /> : <XCircleIcon className="w-6 h-6 text-red-500" />)}</td>
+                                                <td className="p-3">{v.rto.pendingFine > 0 ? `₹${v.rto.pendingFine}` : '₹0'}</td>
+                                                <td className="p-3">{getStatusIcon(v.compliance.insuranceStatus)}</td>
+                                                <td className="p-3">{getStatusIcon(v.compliance.pucStatus)}</td>
+                                                <td className="p-3">{getStatusIcon(v.compliance.taxStatus)}</td>
+                                                <td className="p-3">{getStatusIcon(v.charging.discrepancyFlag)}</td>
+                                                <td className="p-3 text-frog">{v.compliance.overallStatus.length > 0 ? v.compliance.overallStatus[0].split(' on ')[0] : <span className="text-caribbean-green">OK</span>}</td>
+                                            </tr>
+                                            {expandedRow === v.plate && (
+                                                <tr className="bg-pine/30">
+                                                    <td colSpan={11} className="p-0">
+                                                        <DetailRow vehicle={v} />
+                                                    </td>
+                                                </tr>
                                             )}
+                                        </React.Fragment>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={11} className="text-center p-8 text-stone">
+                                            No vehicles match the current filters.
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -211,9 +439,71 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                         </div>
                     )}
                 </div>
-                 <button onClick={onGenerateReport} className="w-full text-lg font-bold bg-caribbean-green text-rich-black px-8 py-3 rounded-md hover:bg-mountain-meadow hover:shadow-glow-green-lg transition-all duration-300">
-                    Generate Full Report
-                </button>
+                 <div className="bg-basil/30 backdrop-blur-sm rounded-lg p-6 border border-bangladesh-green animate-slide-in-up" style={{ animationDelay: '400ms'}}>
+                    <h2 className="text-xl font-semibold text-anti-flash-white mb-4">AI Fleet Recommendations</h2>
+                    {isGeneratingSuggestions ? (
+                        <div className="flex flex-col items-center justify-center py-4">
+                            <ProcessingIcon className="w-12 h-12 text-caribbean-green animate-spin" />
+                            <p className="text-stone mt-2">Analyzing fleet data...</p>
+                        </div>
+                    ) : suggestionsError ? (
+                        <p className="text-red-500">{suggestionsError}</p>
+                    ) : aiSuggestions ? (
+                        <div className="text-sm text-anti-flash-white/90 whitespace-pre-wrap font-mono max-h-80 overflow-y-auto">{aiSuggestions}</div>
+                    ) : (
+                        <button
+                            onClick={handleGenerateSuggestions}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-md font-semibold rounded-md bg-caribbean-green/20 text-caribbean-green hover:bg-caribbean-green/40 disabled:opacity-50 transition-all"
+                        >
+                            <SparklesIcon className="w-5 h-5" />
+                            Generate AI Suggestions
+                        </button>
+                    )}
+                </div>
+                <div className="space-y-3">
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={handleReportGeneration} 
+                            disabled={isReportButtonDisabled}
+                            className="flex-grow text-lg font-bold bg-caribbean-green text-rich-black px-4 py-3 rounded-md hover:bg-mountain-meadow hover:shadow-glow-green-lg transition-all duration-300 disabled:bg-stone disabled:cursor-not-allowed"
+                        >
+                            {reportButtonText}
+                        </button>
+                        <button
+                            onClick={() => setShowReportOptions(!showReportOptions)}
+                            className="flex-shrink-0 p-3 bg-basil rounded-md text-caribbean-green hover:bg-forest hover:shadow-glow-green transition-all"
+                            aria-label="Customize Report"
+                        >
+                            <CogIcon className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    {showReportOptions && (
+                        <div className="bg-basil/50 p-4 rounded-lg border border-bangladesh-green animate-fade-in text-sm space-y-3">
+                             <h4 className="font-semibold text-anti-flash-white">Report Sections</h4>
+                             <label className="flex items-center gap-3 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    name="includeComplianceDetails"
+                                    checked={reportOptions.includeComplianceDetails} 
+                                    onChange={handleReportOptionChange}
+                                    className="bg-transparent border-stone rounded focus:ring-caribbean-green text-caribbean-green cursor-pointer" 
+                                />
+                                Compliance Details Table
+                             </label>
+                             <label className="flex items-center gap-3 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    name="includeChargingDiscrepancies"
+                                    checked={reportOptions.includeChargingDiscrepancies} 
+                                    onChange={handleReportOptionChange}
+                                    className="bg-transparent border-stone rounded focus:ring-caribbean-green text-caribbean-green cursor-pointer" 
+                                />
+                                Charging Discrepancy Analysis
+                             </label>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     </div>

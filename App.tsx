@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
-import { ProcessedVehicleData, Transaction, AiDetection, RtoData } from './types';
+import { ProcessedVehicleData, Transaction, AiDetection, RtoData, ReportSections } from './types';
 import { UploadView } from './components/UploadView';
 import { DashboardView } from './components/DashboardView';
 import { mockAiDetections, mockRtoDatabase, parseTransactions } from './services/mockData';
@@ -87,9 +87,11 @@ const LoadingOverlay: React.FC = () => (
 function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<ProcessedVehicleData[] | null>(null);
+    const [parsingError, setParsingError] = useState<string | null>(null);
 
     const handleAnalyze = useCallback((videoFile: File, transactionLog: string) => {
         setIsLoading(true);
+        setParsingError(null);
         // Simulate async processing
         setTimeout(() => {
             try {
@@ -98,21 +100,27 @@ function App() {
                 setAnalysisResult(processed);
             } catch (error) {
                 console.error("Failed to process data:", error);
-                alert("There was an error parsing the transaction log. Please check the file format.");
+                const errorMessage = error instanceof Error ? error.message : "Invalid file content.";
+                setParsingError(`Transaction Log Error: ${errorMessage}`);
             } finally {
                 setIsLoading(false);
             }
         }, 2000);
     }, []);
 
-    const handleGenerateReport = useCallback(() => {
-        if (analysisResult) {
-            generateReport(analysisResult);
+    const handleGenerateReport = useCallback((dataToReport: ProcessedVehicleData[], sections: ReportSections) => {
+        if (dataToReport && dataToReport.length > 0) {
+            generateReport(dataToReport, sections);
         }
-    }, [analysisResult]);
+    }, []);
+
+    const handleClearParsingError = useCallback(() => {
+        setParsingError(null);
+    }, []);
 
     const handleReset = useCallback(() => {
         setAnalysisResult(null);
+        setParsingError(null);
     }, []);
 
     return (
@@ -121,7 +129,12 @@ function App() {
             {analysisResult ? (
                 <DashboardView data={analysisResult} onGenerateReport={handleGenerateReport} onReset={handleReset} />
             ) : (
-                <UploadView onAnalyze={handleAnalyze} isLoading={isLoading} />
+                <UploadView 
+                    onAnalyze={handleAnalyze} 
+                    isLoading={isLoading}
+                    parsingError={parsingError}
+                    onClearParsingError={handleClearParsingError}
+                />
             )}
         </div>
     );

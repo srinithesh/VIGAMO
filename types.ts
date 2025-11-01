@@ -47,3 +47,8 @@ export interface ProcessedVehicleData {
     overallStatus: string[];
   };
 }
+
+export interface ReportSections {
+  includeComplianceDetails: boolean;
+  includeChargingDiscrepancies: boolean;
+}

@@ -1,4 +1,3 @@
-
 import { AiDetection, RtoData, Transaction } from '../types';
 
 export const mockAiDetections: AiDetection[] = [
@@ -76,9 +75,23 @@ export const mockRtoDatabase: Record<string, RtoData> = {
 };
 
 export const parseTransactions = (fileContent: string): Transaction[] => {
+  if (!fileContent || !fileContent.trim()) {
+    throw new Error("The transaction log file is empty.");
+  }
   const lines = fileContent.trim().split('\n');
+  if (lines.length < 2) {
+    throw new Error("The log must contain a header and at least one data row.");
+  }
+
   const headers = lines[0].split(',').map(h => h.trim());
   const transactions: Transaction[] = [];
+
+  const requiredHeaders = ['Timestamp', 'Plate', 'Billed_kWh', 'Amount (₹)', 'Charger_ID'];
+  const missingHeaders = requiredHeaders.filter(rh => !headers.includes(rh));
+  if (missingHeaders.length > 0) {
+    throw new Error(`Missing required column(s): ${missingHeaders.join(', ')}.`);
+  }
+
 
   const keyMap: Record<string, string> = {
     'Timestamp': 'timestamp',
@@ -89,12 +102,19 @@ export const parseTransactions = (fileContent: string): Transaction[] => {
   };
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim());
+    const line = lines[i];
+    if (!line.trim()) continue; // Skip empty lines
+    const values = line.split(',').map(v => v.trim());
+    
+    if (values.length !== headers.length) {
+        throw new Error(`Row ${i + 1} has an incorrect number of columns. Expected ${headers.length}, but found ${values.length}.`);
+    }
+
     const transaction: any = {};
     headers.forEach((header, index) => {
       const key = keyMap[header] || header.toLowerCase();
       const value = values[index];
-      transaction[key] = isNaN(Number(value)) ? value : Number(value);
+      transaction[key] = isNaN(Number(value)) || value === '' ? value : Number(value);
     });
     transactions.push(transaction as Transaction);
   }

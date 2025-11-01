@@ -5,19 +5,29 @@ import { getMockTransactionCsv } from '../services/mockData';
 interface UploadViewProps {
   onAnalyze: (videoFile: File, transactionLog: string) => void;
   isLoading: boolean;
+  parsingError: string | null;
+  onClearParsingError: () => void;
 }
 
-export const UploadView: React.FC<UploadViewProps> = ({ onAnalyze, isLoading }) => {
+export const UploadView: React.FC<UploadViewProps> = ({ onAnalyze, isLoading, parsingError, onClearParsingError }) => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [transactionLog, setTransactionLog] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  const [validationError, setValidationError] = useState<string>('');
 
   const videoInputRef = useRef<HTMLInputElement>(null);
   const transactionInputRef = useRef<HTMLInputElement>(null);
 
+  const clearAllErrors = () => {
+    setValidationError('');
+    if (parsingError) {
+      onClearParsingError();
+    }
+  };
+
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setVideoFile(e.target.files[0]);
+      clearAllErrors();
     }
   };
 
@@ -26,6 +36,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onAnalyze, isLoading }) 
       const reader = new FileReader();
       reader.onload = (event) => {
         setTransactionLog(event.target?.result as string);
+        clearAllErrors();
       };
       reader.readAsText(e.target.files[0]);
     }
@@ -36,17 +47,19 @@ export const UploadView: React.FC<UploadViewProps> = ({ onAnalyze, isLoading }) 
     const mockVideoFile = new File(["mock video content"], "cctv_feed.mp4", { type: "video/mp4" });
     setTransactionLog(mockCsv);
     setVideoFile(mockVideoFile);
-    setError('');
+    clearAllErrors();
   }
 
   const handleAnalyzeClick = () => {
     if (!videoFile || !transactionLog) {
-      setError('Please provide both a CCTV feed and a transaction log.');
+      setValidationError('Please provide both a CCTV feed and a transaction log.');
       return;
     }
-    setError('');
+    clearAllErrors();
     onAnalyze(videoFile, transactionLog);
   };
+
+  const displayError = parsingError || validationError;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 animate-fade-in">
@@ -78,7 +91,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onAnalyze, isLoading }) 
           </div>
         </div>
 
-        {error && <p className="text-frog mb-4 font-semibold">{error}</p>}
+        {displayError && <p className="text-red-500 mb-4 font-semibold">{displayError}</p>}
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
