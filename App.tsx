@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback } from 'react';
 import { ProcessedVehicleData, Transaction, AiDetection, RtoData, ReportSections } from './types';
 import { UploadView } from './components/UploadView';
@@ -56,6 +57,7 @@ const processData = (transactions: Transaction[], aiDetections: AiDetection[], r
             plate: tx.plate,
             vehicleType: detection.vehicleType || 'Other',
             helmet: detection.helmet === undefined ? null : detection.helmet,
+            timestamp: tx.timestamp,
             rto: rto as RtoData,
             charging: {
                 billed: tx.billedKwh,

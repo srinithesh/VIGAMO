@@ -1,4 +1,5 @@
 
+
 export interface Transaction {
   timestamp: string;
   plate: string;
@@ -30,6 +31,7 @@ export interface ProcessedVehicleData {
   plate: string;
   vehicleType: '2-Wheeler' | '4-Wheeler' | 'Truck' | 'Other';
   helmet: boolean | null;
+  timestamp: string;
   rto: RtoData;
   charging: {
     billed: number;

@@ -20,14 +20,14 @@ export const mockAiDetections: AiDetection[] = [
     "vehicleType": "4-Wheeler",
     "helmet": null,
     "detectedKwh": 30.2,
-    "timestamp": "2025-10-31T10:25:10"
+    "timestamp": "2025-11-01T10:25:10"
   },
   {
     "plate": "DL05GH3456",
     "vehicleType": "2-Wheeler",
     "helmet": true,
     "detectedKwh": 14.8,
-    "timestamp": "2025-10-31T10:28:05"
+    "timestamp": "2025-11-01T10:28:05"
   }
 ];
 
@@ -124,9 +124,9 @@ export const parseTransactions = (fileContent: string): Transaction[] => {
 
 export const getMockTransactionCsv = (): string => {
   return `Timestamp,Plate,Billed_kWh,Amount (₹),Charger_ID
-10:20:00,KA03AB1234,15.0,750,EV-CH-01
-10:22:30,TN10CD5678,45.0,2250,EV-CH-01
-10:25:10,MH12EF9012,35.0,1750,EV-CH-02
-10:28:05,DL05GH3456,15.0,755,EV-CH-01
+2025-10-31T10:20:00,KA03AB1234,15.0,750,EV-CH-01
+2025-10-31T10:22:30,TN10CD5678,45.0,2250,EV-CH-01
+2025-11-01T10:25:10,MH12EF9012,35.0,1750,EV-CH-02
+2025-11-01T10:28:05,DL05GH3456,15.0,755,EV-CH-01
 `;
 }
