@@ -13,13 +13,24 @@ const processData = (transactions: Transaction[], aiDetections: AiDetection[], r
     const discrepancyCounts: Record<string, number> = {};
     const suspiciousSessions = new Set<string>();
     
-    // First pass for charging discrepancies
+    // First pass to identify suspicious charging sessions based on refined logic
     transactions.forEach(tx => {
         const detection = aiDetections.find(d => d.plate === tx.plate);
         if (detection) {
             const difference = tx.billedKwh - detection.detectedKwh;
-            if (Math.abs(difference) > 2.0) { // Allow for a 2 kWh margin of error
+            const absDifference = Math.abs(difference);
+
+            // Calculate percentage difference, handle division by zero or tiny values
+            const percentageDifference = tx.billedKwh > 0.1 ? (absDifference / tx.billedKwh) * 100 : 0;
+
+            // A session is suspicious if the absolute difference is over 5 kWh,
+            // or if the difference is more than 10% AND over 1 kWh.
+            // This avoids flagging tiny, insignificant discrepancies on small charges.
+            const isSuspicious = absDifference > 5.0 || (percentageDifference > 10 && absDifference > 1.0);
+            
+            if (isSuspicious) {
                 suspiciousSessions.add(tx.plate);
+                // Count discrepancies per charger
                 discrepancyCounts[tx.chargerId] = (discrepancyCounts[tx.chargerId] || 0) + 1;
             }
         }
@@ -31,10 +42,15 @@ const processData = (transactions: Transaction[], aiDetections: AiDetection[], r
 
         const difference = tx.billedKwh - (detection.detectedKwh || tx.billedKwh);
         let discrepancyFlag: ProcessedVehicleData['charging']['discrepancyFlag'] = 'OK';
-        if (discrepancyCounts[tx.chargerId] >= 3) {
-            discrepancyFlag = 'Potential Charger Fault';
-        } else if (suspiciousSessions.has(tx.plate)) {
-            discrepancyFlag = 'Suspicious';
+        
+        // A specific transaction is only flagged if it was one of the suspicious ones.
+        // If the associated charger has 3 or more suspicious sessions, it's flagged as a potential fault.
+        if (suspiciousSessions.has(tx.plate)) {
+            if (discrepancyCounts[tx.chargerId] >= 3) {
+                discrepancyFlag = 'Potential Charger Fault';
+            } else {
+                discrepancyFlag = 'Suspicious';
+            }
         }
         
         let score = 100;

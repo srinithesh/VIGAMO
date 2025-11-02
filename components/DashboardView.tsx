@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis, Cell } from 'recharts';
 import { ProcessedVehicleData, ReportSections } from '../types';
-import { CheckCircleIcon, WarningIcon, XCircleIcon, SparklesIcon, ProcessingIcon, ChevronDownIcon, CogIcon, SearchIcon } from './Icons';
+import { CheckCircleIcon, WarningIcon, XCircleIcon, SparklesIcon, ProcessingIcon, ChevronDownIcon, CogIcon, SearchIcon, CarIcon, MotorcycleIcon, TruckIcon, QuestionMarkIcon } from './Icons';
 import { getComplianceSummary, getOverallSuggestions } from '../services/geminiService';
 
 interface DashboardViewProps {
@@ -29,6 +29,21 @@ const getStatusIcon = (status: string) => {
             return <span className="text-stone">-</span>;
     }
 };
+
+const formatDate = (dateString: string) => {
+    try {
+        return new Date(dateString).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    } catch (e) {
+        return dateString;
+    }
+};
+
+type SortableKeys = 'plate' | 'vehicleType' | 'fine' | 'timestamp';
+
 
 const ComplianceGauge: React.FC<{ score: number }> = ({ score }) => {
   const data = [{ name: 'score', value: score }];
@@ -72,6 +87,20 @@ const ComplianceGauge: React.FC<{ score: number }> = ({ score }) => {
   );
 };
 
+const VehicleTypeIcon: React.FC<{ type: ProcessedVehicleData['vehicleType'] }> = ({ type }) => {
+    const baseClass = "w-8 h-8";
+    switch (type) {
+        case '2-Wheeler':
+            return <MotorcycleIcon className={`${baseClass} text-pistachio`} title="2-Wheeler" />;
+        case '4-Wheeler':
+            return <CarIcon className={`${baseClass} text-pistachio`} title="4-Wheeler" />;
+        case 'Truck':
+            return <TruckIcon className={`${baseClass} text-pistachio`} title="Truck" />;
+        default:
+            return <QuestionMarkIcon className="w-7 h-7 text-stone" title="Other" />;
+    }
+};
+
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateReport, onReset }) => {
     const [summaries, setSummaries] = useState<Record<string, string>>({});
@@ -95,15 +124,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
     const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [reviewedDiscrepancies, setReviewedDiscrepancies] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
+    const [sortConfig, setSortConfig] = useState<{ key: SortableKeys; direction: 'ascending' | 'descending' }>({ key: 'timestamp', direction: 'descending' });
 
     const overallScore = data.reduce((acc, v) => acc + v.compliance.score, 0) / (data.length || 1);
     const discrepancyData = data.filter(v => v.charging.discrepancyFlag !== 'OK');
     const violations = data.flatMap(v => v.compliance.overallStatus);
 
+    const reviewedDiscrepancyCount = useMemo(() => {
+        return discrepancyData.filter(v => reviewedDiscrepancies.has(v.plate)).length;
+    }, [discrepancyData, reviewedDiscrepancies]);
+
     const vehicleTypes = useMemo(() => ['all', ...Array.from(new Set(data.map(v => v.vehicleType)))], [data]);
 
     const filteredData = useMemo(() => {
-        return data.filter(v => {
+        let processedData = data.filter(v => {
             // Search filter
             if (searchQuery && !v.plate.toLowerCase().includes(searchQuery.toLowerCase())) return false;
 
@@ -138,7 +172,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
 
             return true;
         });
-    }, [data, filters, dateRange, searchQuery]);
+
+        // Apply sorting
+        if (sortConfig !== null) {
+            processedData.sort((a, b) => {
+                const { key, direction } = sortConfig;
+                let aVal, bVal;
+                
+                switch (key) {
+                    case 'plate':
+                        aVal = a.plate;
+                        bVal = b.plate;
+                        return direction === 'ascending' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                    case 'vehicleType':
+                        aVal = a.vehicleType;
+                        bVal = b.vehicleType;
+                        return direction === 'ascending' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                    case 'fine':
+                        aVal = a.rto.pendingFine;
+                        bVal = b.rto.pendingFine;
+                        break;
+                    case 'timestamp':
+                        aVal = new Date(a.timestamp).getTime();
+                        bVal = new Date(b.timestamp).getTime();
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (aVal < bVal) {
+                    return direction === 'ascending' ? -1 : 1;
+                }
+                if (aVal > bVal) {
+                    return direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+
+        return processedData;
+    }, [data, filters, dateRange, searchQuery, sortConfig]);
 
     const isDateFilterActive = dateRange.start || dateRange.end;
 
@@ -155,6 +228,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
         });
         setDateRange({ start: '', end: '' });
         setSearchQuery('');
+        setSortConfig({ key: 'timestamp', direction: 'descending' });
+    };
+    
+    const requestSort = (key: SortableKeys) => {
+        let direction: 'ascending' | 'descending' = 'ascending';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
     };
 
     const handleGenerateSummary = async (vehicleData: ProcessedVehicleData) => {
@@ -184,6 +266,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
         } finally {
             setIsGeneratingSuggestions(false);
         }
+    };
+
+    const toggleReviewedStatus = (plate: string) => {
+        setReviewedDiscrepancies(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(plate)) {
+                newSet.delete(plate);
+            } else {
+                newSet.add(plate);
+            }
+            return newSet;
+        });
     };
 
     const allVisibleSelected = useMemo(() => {
@@ -248,18 +342,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
 
 
     const DetailRow: React.FC<{ vehicle: ProcessedVehicleData }> = ({ vehicle }) => {
-        const formatDate = (dateString: string) => {
-            try {
-                return new Date(dateString).toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric'
-                });
-            } catch (e) {
-                return dateString;
-            }
-        };
-
         return (
             <div className="p-4 bg-pine/50 space-y-4 animate-fade-in">
                 <div className="flex flex-col lg:flex-row gap-4">
@@ -445,9 +527,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                                         />
                                     </th>
                                     <th className="p-3 w-8"></th>
-                                    {['Plate', 'Vehicle', 'Helmet', 'Fine', 'Insurance', 'PUC', 'Tax', 'Charging', 'Status'].map(h => (
-                                        <th key={h} className="p-3">{h}</th>
-                                    ))}
+                                    {['Plate', 'Date', 'Vehicle', 'Helmet', 'Fine', 'Insurance', 'PUC', 'Tax', 'Charging', 'Status'].map(h => {
+                                        const sortableColumns: Partial<Record<string, SortableKeys>> = {
+                                            'Plate': 'plate',
+                                            'Date': 'timestamp',
+                                            'Vehicle': 'vehicleType',
+                                            'Fine': 'fine',
+                                        };
+                                        const sortKey = sortableColumns[h];
+
+                                        if (sortKey) {
+                                            return (
+                                                <th key={h} className="p-3 cursor-pointer select-none group" onClick={() => requestSort(sortKey)}>
+                                                    <div className="flex items-center gap-1 hover:text-anti-flash-white transition-colors">
+                                                        {h}
+                                                        {sortConfig?.key === sortKey ? (
+                                                            <ChevronDownIcon className={`w-4 h-4 text-caribbean-green transition-transform transform ${sortConfig.direction === 'ascending' ? 'rotate-180' : ''}`} />
+                                                        ) : (
+                                                            <ChevronDownIcon className="w-4 h-4 text-transparent group-hover:text-stone/50" />
+                                                        )}
+                                                    </div>
+                                                </th>
+                                            );
+                                        }
+                                        return <th key={h} className="p-3">{h}</th>;
+                                    })}
                                 </tr>
                             </thead>
                             <tbody>
@@ -474,18 +578,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                                                     <ChevronDownIcon className={`w-5 h-5 text-stone transition-transform transform group-hover:text-anti-flash-white ${expandedRow === v.plate ? 'rotate-180' : ''}`} />
                                                 </td>
                                                 <td className="p-3 font-mono">{v.plate}</td>
-                                                <td className="p-3">{v.vehicleType}</td>
+                                                <td className="p-3 text-stone">{formatDate(v.timestamp)}</td>
+                                                <td className="p-3">
+                                                    <VehicleTypeIcon type={v.vehicleType} />
+                                                </td>
                                                 <td className="p-3">{v.helmet === null ? '—' : (v.helmet ? <CheckCircleIcon className="w-6 h-6 text-caribbean-green" /> : <XCircleIcon className="w-6 h-6 text-red-500" />)}</td>
                                                 <td className="p-3">{v.rto.pendingFine > 0 ? `₹${v.rto.pendingFine}` : '₹0'}</td>
                                                 <td className="p-3">{getStatusIcon(v.compliance.insuranceStatus)}</td>
                                                 <td className="p-3">{getStatusIcon(v.compliance.pucStatus)}</td>
                                                 <td className="p-3">{getStatusIcon(v.compliance.taxStatus)}</td>
-                                                <td className="p-3">{getStatusIcon(v.charging.discrepancyFlag)}</td>
+                                                <td className="p-3">
+                                                    {v.charging.discrepancyFlag !== 'OK' && reviewedDiscrepancies.has(v.plate)
+                                                        ? <span title="Discrepancy Reviewed"><CheckCircleIcon className="w-6 h-6 text-pistachio" /></span>
+                                                        : getStatusIcon(v.charging.discrepancyFlag)}
+                                                </td>
                                                 <td className="p-3 text-frog">{v.compliance.overallStatus.length > 0 ? v.compliance.overallStatus[0].split(' on ')[0] : <span className="text-caribbean-green">OK</span>}</td>
                                             </tr>
                                             {expandedRow === v.plate && (
                                                 <tr className="bg-pine/30">
-                                                    <td colSpan={11} className="p-0">
+                                                    <td colSpan={12} className="p-0">
                                                         <DetailRow vehicle={v} />
                                                     </td>
                                                 </tr>
@@ -494,7 +605,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={11} className="text-center p-8 text-stone">
+                                        <td colSpan={12} className="text-center p-8 text-stone">
                                             {isDateFilterActive
                                                 ? "No vehicles found for the selected date range and filters."
                                                 : "No vehicles match the current filters."
@@ -511,7 +622,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                 {discrepancyData.length > 0 && (
                     <div className="bg-basil/30 backdrop-blur-sm rounded-lg p-4 border border-bangladesh-green animate-slide-in-up" style={{ animationDelay: '200ms'}}>
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-semibold text-anti-flash-white">Charging Discrepancy Detections</h2>
+                            <h2 className="text-xl font-semibold text-anti-flash-white">
+                                Charging Discrepancy Detections ({discrepancyData.length} total, {reviewedDiscrepancyCount} reviewed)
+                            </h2>
                              <div className="flex gap-2">
                                 <button
                                     onClick={handleMarkAllReviewed}
@@ -533,7 +646,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                             <table className="w-full text-left">
                                 <thead className="border-b-2 border-bangladesh-green text-stone">
                                     <tr>
-                                        {['Plate', 'Billed (kWh)', 'Detected (kWh)', 'Difference', 'Flag'].map(h => (
+                                        {['Plate', 'Billed (kWh)', 'Detected (kWh)', 'Difference', 'Flag', 'Action'].map(h => (
                                             <th key={h} className="p-3">{h}</th>
                                         ))}
                                     </tr>
@@ -546,6 +659,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ data, onGenerateRe
                                             <td className="p-3">{v.charging.detected.toFixed(2)}</td>
                                             <td className={`p-3 font-bold text-red-400`}>{v.charging.difference.toFixed(2)}</td>
                                             <td className="p-3 text-yellow-400 flex items-center gap-2"><WarningIcon className="w-5 h-5" />{v.charging.discrepancyFlag}</td>
+                                            <td className="p-3">
+                                                <button
+                                                    onClick={() => toggleReviewedStatus(v.plate)}
+                                                    className={`text-xs px-3 py-1 rounded transition-all whitespace-nowrap ${
+                                                        reviewedDiscrepancies.has(v.plate) 
+                                                        ? 'bg-stone/20 text-stone hover:bg-stone/40' 
+                                                        : 'bg-caribbean-green/20 text-caribbean-green hover:bg-caribbean-green/40'
+                                                    }`}
+                                                >
+                                                    {reviewedDiscrepancies.has(v.plate) ? 'Undo' : 'Mark as Reviewed'}
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

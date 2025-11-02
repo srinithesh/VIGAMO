@@ -126,3 +126,39 @@ export const SearchIcon = ({ className }: { className?: string }) => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
   </svg>
 );
+
+// FIX: Update CarIcon to accept standard SVG props to allow `title` and other attributes.
+export const CarIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+       <circle cx="7" cy="17" r="2"></circle>
+       <circle cx="17" cy="17" r="2"></circle>
+       <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"></path>
+    </svg>
+);
+
+// FIX: Update MotorcycleIcon to accept standard SVG props to allow `title` and other attributes.
+export const MotorcycleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+       <circle cx="5" cy="16" r="3"></circle>
+       <circle cx="19" cy="16" r="3"></circle>
+       <path d="M7.5 14h5l4 -4h-10.5z"></path>
+       <path d="M14 14l2.5 2.5"></path>
+       <path d="M4.5 19l4.5 -10.5"></path>
+    </svg>
+);
+
+// FIX: Update TruckIcon to accept standard SVG props to allow `title` and other attributes.
+export const TruckIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
+       <circle cx="7" cy="17" r="2"></circle>
+       <circle cx="17" cy="17" r="2"></circle>
+       <path d="M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5"></path>
+    </svg>
+);
+
+// FIX: Update QuestionMarkIcon to accept standard SVG props to allow `title` and other attributes.
+export const QuestionMarkIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+);
